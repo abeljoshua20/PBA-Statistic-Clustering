@@ -29,15 +29,19 @@ class PBA_Consolidator:
 
     def __init__(self):
         """Initialize a new instance of a PBA_Consolidator"""
-        self.repo_team = 'pba_team_csv'
-        self.repo_season = 'pba_season_csv'
+        self.repo_team = 'data/pba_team_csv'
+        self.repo_season = 'data/pba_season_csv'
+        self.fp_player_desc = 'data/player_desc.csv'
         self.df_tot_stat = pd.DataFrame(columns=raw_team_cols)
         self.df_avg_stat = pd.DataFrame(columns=raw_team_cols)
         self.df_team_tot_stat = pd.DataFrame(columns=raw_season_cols)
         self.df_team_avg_stat = pd.DataFrame(columns=raw_season_cols)
         self.df_history = pd.DataFrame(columns=['year', 'conference_id'])
         self.df_conference = pd.DataFrame(columns=['conference'])
-        self.df_player = pd.DataFrame(columns=['player_name'])
+        self.df_player = pd.DataFrame(columns=['player_name',
+                                               'j_number',
+                                               'height',
+                                               'pos'])
         self.df_team = pd.DataFrame(columns=['team_name'])
 
     def _add_team(self, team_name):
@@ -57,7 +61,20 @@ class PBA_Consolidator:
         if len(result):
             return result.index[0]
         player_id = len(self.df_player)
-        self.df_player.loc[player_id] = player_name
+        df_desc = pd.read_csv(self.fp_player_desc).fillna(0)
+        srs = df_desc.loc[df_desc.Name == player_name]
+
+        if len(srs):
+            jersey = srs.j_number.values[0]
+            height = srs.height.values[0]
+            pos = srs.pos.values[0]
+        else:
+            jersey = None
+            height = None
+            pos = None
+
+        self.df_player.loc[player_id] = (player_name, jersey,
+                                         height, pos)
         return player_id
 
     def _add_hist(self, year, conf_id):
@@ -94,6 +111,7 @@ class PBA_Consolidator:
 
     def _consolidate_playerstat(self):
         """Consolidate player statistics located in the repository of teams"""
+        # Define a lambda function
         for file in os.listdir(self.repo_team):
             fp = os.path.join(self.repo_team, file)
             obj = re.search(r'(\d{4})_([A-Z]+)_([A-Z]+)_(AVG|TOT)',
@@ -120,6 +138,15 @@ class PBA_Consolidator:
             m2 = df['+/-'] != 0
             df = df.loc[m1 | m2]
 
+            # Convert percentage to float
+            perc_col = [col for col in df.columns if '%' in col]
+            for col in perc_col:
+                if df[col].dtype != 'O':
+                    # If column type is not a string continue
+                    continue
+                df[col] = (df[col].apply(lambda x: int(x.replace('%', '')) /
+                                         100))
+
             if stat_type == 'TOT':
                 self.df_tot_stat = self.df_tot_stat.append(df,
                                                            ignore_index=True)
@@ -143,7 +170,18 @@ class PBA_Consolidator:
             hist_id = self._find_history(year, conf_id)
             df['team_id'] = df.Team.apply(lambda x: self._add_team(x))
             df['hist_id'] = hist_id
+
+            # Drop the team column
             df.drop(['Team'], axis=1, inplace=True)
+
+            # Convert percentage to float
+            perc_col = [col for col in df.columns if '%' in col]
+            for col in perc_col:
+                if df[col].dtype != 'O':
+                    # If column type is not a string continue
+                    continue
+                df[col] = (df[col].apply(lambda x: int(x.replace('%', '')) /
+                                         100))
 
             if stat_type == 'TOT':
                 self.df_team_tot_stat = (self.df_team_tot_stat
@@ -176,3 +214,4 @@ class PBA_Consolidator:
                                   if_exists='replace')
             self.df_team.to_sql('team', con=conn,
                                 if_exists='replace')
+        engine.dispose()
