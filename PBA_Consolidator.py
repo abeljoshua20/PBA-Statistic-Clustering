@@ -31,7 +31,7 @@ class PBA_Consolidator:
         """Initialize a new instance of a PBA_Consolidator"""
         self.repo_team = 'data/pba_team_csv'
         self.repo_season = 'data/pba_season_csv'
-        self.fp_player_desc = 'data/player_desc.csv'
+        self.fp_player_desc = 'data/updated_player_hw_V2.csv'
         self.df_tot_stat = pd.DataFrame(columns=raw_team_cols)
         self.df_avg_stat = pd.DataFrame(columns=raw_team_cols)
         self.df_team_tot_stat = pd.DataFrame(columns=raw_season_cols)
@@ -41,11 +41,14 @@ class PBA_Consolidator:
         self.df_player = pd.DataFrame(columns=['player_name',
                                                'j_number',
                                                'height',
+                                               'weight',
                                                'pos'])
         self.df_team = pd.DataFrame(columns=['team_name'])
 
     def _add_team(self, team_name):
         """Add team to the dataframe of team"""
+        if team_name == 'NOR':
+            team_name = 'GLO'
         m1 = self.df_team.team_name == team_name
         result = self.df_team.loc[m1]
         if len(result):
@@ -62,19 +65,22 @@ class PBA_Consolidator:
             return result.index[0]
         player_id = len(self.df_player)
         df_desc = pd.read_csv(self.fp_player_desc).fillna(0)
-        srs = df_desc.loc[df_desc.Name == player_name]
+        srs = df_desc.loc[df_desc.name == player_name]
 
         if len(srs):
             jersey = srs.j_number.values[0]
             height = srs.height.values[0]
+            weight = srs.weight.values[0]
             pos = srs.pos.values[0]
+            
         else:
             jersey = None
             height = None
+            weight = None
             pos = None
 
         self.df_player.loc[player_id] = (player_name, jersey,
-                                         height, pos)
+                                         height, weight, pos)
         return player_id
 
     def _add_hist(self, year, conf_id):
