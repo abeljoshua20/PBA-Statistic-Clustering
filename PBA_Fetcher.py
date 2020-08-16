@@ -42,12 +42,12 @@ class PBA_Fetcher:
 
     def get_total_player_team(self):
         """Get Total of player & team statistics"""
-        df_all_total = get_total_stat(self)
+        df_all_total = self._get_total_stat()
         return self._get_allstat_with_name(df_all_total)
 
     def get_avg_player_team(self):
         """Get Average of player & team statistics"""
-        df_all_average = get_average_stat(self)
+        df_all_average = self._get_average_stat()
         return self._get_allstat_with_name(df_all_average)
 
     def get_avg_total_player(self):
