@@ -8,7 +8,7 @@ class PBA_Fetcher:
         engine = create_engine('sqlite:///pba.db')
         with engine.connect() as conn:
             self.df_player = pd.read_sql('SELECT * FROM player', con=conn)
-            self.df_player['pos'] = self.df_player['pos'].fillna('O')
+            self.df_player['pos'] = self.df_player['pos'].fillna('0')
             self.df_avg_stat = pd.read_sql('SELECT * FROM avg_stat',
                                            con=conn)
             self.df_tot_stat = pd.read_sql('SELECT * FROM total_stat',
