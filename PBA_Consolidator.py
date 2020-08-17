@@ -47,8 +47,8 @@ class PBA_Consolidator:
 
     def _add_team(self, team_name):
         """Add team to the dataframe of team"""
-        if team_name == 'NOR':
-            team_name = 'GLO'
+        if team_name == 'GLO':
+            team_name = 'NOR'
         m1 = self.df_team.team_name == team_name
         result = self.df_team.loc[m1]
         if len(result):
